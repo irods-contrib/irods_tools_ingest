@@ -4,7 +4,7 @@ import utils
 from irods.session import iRODSSession
 
 
-def upload(job_queue, args):
+def worker(job_queue, args):
     '''
     main worker function.
     args is a namespace from parse_args() with additional arguments
@@ -50,7 +50,7 @@ def upload(job_queue, args):
                     logging.info("uploading {0} as {1}".format(path, target))
 
                     if not args.dry_run:
-                        utils.put_file(session, path, target, args)
+                        utils.send_file(session, path, target, args)
                         #put_file(session, path, target)
 
             except:

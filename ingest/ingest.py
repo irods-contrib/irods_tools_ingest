@@ -7,7 +7,7 @@ import logging
 import argparse
 import multiprocessing
 import utils
-import worker
+from worker import worker
 
 
 # parse arguments
@@ -32,19 +32,19 @@ parser.add_argument('--exclude', metavar='PATTERN', type=str, help='exclude path
 # action="store_const", dest="loglevel", const=logging.DEBUG,
 # default=logging.WARNING)
 
-args = parser.parse_args()
+parsed_args = parser.parse_args()
 
 
-logging.basicConfig(stream=sys.stdout, level=args.loglevel,
+logging.basicConfig(stream=sys.stdout, level=parsed_args.loglevel,
                     format='[%(levelname)s] (%(processName)s) %(message)s')
 
 
-args.buffer_size = 1024 * io.DEFAULT_BUFFER_SIZE
+parsed_args.buffer_size = 1024 * io.DEFAULT_BUFFER_SIZE
 
 
-args.source = os.path.abspath(args.source)
-os.stat(args.source)  # sanity check
-args.prefix = os.path.dirname(args.source)
+parsed_args.source = os.path.abspath(parsed_args.source)
+os.stat(parsed_args.source)  # sanity check
+parsed_args.prefix = os.path.dirname(parsed_args.source)
 
 job_queue = multiprocessing.JoinableQueue()
 
@@ -56,16 +56,16 @@ try:
 except KeyError:
     irods_env_file = os.path.expanduser('~/.irods/irods_environment.json')
 
-args.irods_environment = utils.get_irods_env(irods_env_file)
+parsed_args.irods_environment = utils.get_irods_env(irods_env_file)
 
 
 # put source path in the queue
-job_queue.put(args.source)
+job_queue.put(parsed_args.source)
 
 
 # start worker processes
-for _ in range(args.jobs):
-    process = multiprocessing.Process(target=worker.upload, args=(job_queue, args))
+for _ in range(parsed_args.jobs):
+    process = multiprocessing.Process(target=worker, args=(job_queue, parsed_args))
     # process.daemon = True
     process.start()
 
@@ -74,7 +74,7 @@ for _ in range(args.jobs):
 job_queue.join()
 
 # put kill pills in the queue
-for _ in range(args.jobs):
+for _ in range(parsed_args.jobs):
     job_queue.put(None)
 
 
