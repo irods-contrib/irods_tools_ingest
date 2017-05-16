@@ -40,18 +40,17 @@ def worker(job_queue, args):
                     logging.info("creating {0}".format(target))
 
                     if not args.dry_run:
-                        session.collections.create(target)
+                        utils.make_collection(session, target, args)
 
                     # add children to queue
                     for child in os.listdir(path):
                         job_queue.put(os.path.join(path, child))
 
                 else:
-                    logging.info("uploading {0} as {1}".format(path, target))
+                    #logging.info("uploading {0} as {1}".format(path, target))
 
                     if not args.dry_run:
                         utils.send_file(session, path, target, args)
-                        #put_file(session, path, target)
 
             except:
                 logging.error(str(path))

@@ -20,6 +20,8 @@ parser.add_argument(
 parser.add_argument('-j', '--jobs', metavar='JOBS', default=8,
                     type=int, help='number of concurrent jobs', choices=range(1, 65))
 parser.add_argument(
+    "-m", "--metadata", help="send metadata along with objects", action="store_true")
+parser.add_argument(
     "-n", "--dry-run", help="perform a trial run with no changes made", action="store_true")
 parser.add_argument(
     "-k", "--register-checksum", help="register a checksum for each object, server-side", action="store_true")
