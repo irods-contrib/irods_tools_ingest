@@ -85,6 +85,10 @@ def get_metadata(attributes=config.TEST_METADATA):
     return meta_str
 
 
+def get_acls(acls=config.TEST_ACLS):
+    return ";".join(["{0} {1}".format(*acl) for acl in acls])
+
+
 def set_options_from_args(args):
     options = {kw.OPR_TYPE_KW: 1}   # PUT_OPR
 
@@ -93,6 +97,9 @@ def set_options_from_args(args):
 
     if args.metadata:
         options[kw.METADATA_INCLUDED_KW] = get_metadata()
+
+    if args.acl:
+        options[kw.ACL_INCLUDED_KW] = get_acls()
 
     return options
 
