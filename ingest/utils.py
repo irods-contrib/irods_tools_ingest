@@ -12,8 +12,7 @@ import irods.exception as ex
 import config
 
 
-class IrodsChecksum(object):
-    __metaclass__ = ABCMeta
+class IrodsChecksum(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(self):
