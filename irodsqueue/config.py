@@ -1,3 +1,5 @@
+DEFAULT_HASH_SCHEME = 'SHA256'
+
 TEST_METADATA = [('a0', 'v0', 'u0'),
                  ('a1', 'v1'),
                  ('a2', 'v2'),
