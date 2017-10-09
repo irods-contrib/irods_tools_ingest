@@ -1,11 +1,15 @@
 import json
+import sys
 import re
 import io
 import os
 import hashlib
 import base64
 import logging
+import importlib
 from abc import ABCMeta, abstractmethod
+import time
+import datetime
 import irods.keywords as kw
 import irods.password_obfuscation as obf
 import irods.exception as ex
@@ -15,6 +19,7 @@ from redis import Redis
 from rq import Queue
 
 from rq.utils import make_colorizer
+from rq.connections import get_current_connection
 
 yellow = make_colorizer('yellow')
 
@@ -83,30 +88,38 @@ def get_irods_hasher(params):
     raise ValueError('{} is not a supported hash scheme'.format(hash_scheme))
 
 
-def get_metadata(attributes=config.TEST_METADATA):
-    meta_str = ""
-    for attribute in attributes:
-        try:
-            meta_str += "{};{};{};".format(*attribute)
-        except IndexError:
-            # no unit
-            meta_str += "{};{};;".format(*attribute)
+def extract_metadata(path, options, params):
+    module_name = 'irods_metadata_extract'
 
-    return meta_str
+    try:
+        # import from cache
+        module = importlib.import_module(module_name)
+
+    except ImportError:
+        # load module from file
+        spec = importlib.util.spec_from_file_location(module_name, params.extract_metadata)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        # for subsequent imports
+        sys.modules[module_name] = module
+
+    # invoke metadata extraction function from module
+    options[kw.METADATA_INCLUDED_KW] = module.extract_metadata(path=path)
 
 
 def get_acls(acls=config.TEST_ACLS):
     return ";".join(["{} {}".format(*acl) for acl in acls])
 
 
-def set_options_from_params(params):
+def set_options_from_params(path, params):
     options = {kw.OPR_TYPE_KW: 1}   # PUT_OPR
 
     if params.register_checksum:
         options[kw.REG_CHKSUM_KW] = ''
 
-    if params.metadata:
-        options[kw.METADATA_INCLUDED_KW] = get_metadata()
+    if params.extract_metadata:
+        extract_metadata(path, options, params)
 
     if params.acl:
         options[kw.ACL_INCLUDED_KW] = get_acls()
@@ -132,7 +145,7 @@ def send_file(session, file_path, obj_path, params):
 
     logger.info(yellow("process {} uploading {}".format(os.getpid(), obj_path)))
 
-    options = set_options_from_params(params)
+    options = set_options_from_params(file_path, params)
 
     if params.verify_checksum:
         options[kw.REG_CHKSUM_KW] = ''
@@ -202,8 +215,8 @@ def exclude(path, params):
 # move elsewhere at some point
 def make_ingest_queue(params):
     # create queue
-    #job_queue = multiprocessing.JoinableQueue()
-    job_queue = Queue(connection=Redis())
+    conn = Redis()
+    job_queue = Queue(connection=conn)
 
     # put source path in the queue
     source = params.source
@@ -222,6 +235,15 @@ def make_ingest_queue(params):
             file_path = os.path.join(root, name)
             job_queue.enqueue(process_file, file_path, params,
                               job_id=file_path, depends_on=root, timeout='10m')
+
+    #### for testing ####
+    if params.timer:
+        ts_id = conn.incr('ingest_start_ts_id')
+        job_queue.enqueue(record_start_time, timestamp_id=ts_id, at_front=True)
+        job_queue.enqueue(log_duration, timestamp_id=ts_id, depends_on=file_path)
+    #####################
+
+
 
 
 #########################################
@@ -251,3 +273,24 @@ def process_file(path, params, session):
 
     if not params.dry_run:
         send_file(session, path, target, params)
+
+
+def record_start_time(timestamp_id, **kwargs):
+    conn = get_current_connection()
+    conn.set(timestamp_id, time.time())
+
+
+def log_duration(timestamp_id, **kwargs):
+    '''
+    A poor man's timer.
+    There has to be a better way to time job batches...
+    '''
+    conn = get_current_connection()
+    start_time = conn.get(timestamp_id)
+
+    duration = time.time() - float(start_time)
+    td = datetime.timedelta(seconds=round(duration))
+
+    time.sleep(.5) # just to make it show up at the bottom
+
+    logger.info(yellow('Completed in {}'.format(td)))
