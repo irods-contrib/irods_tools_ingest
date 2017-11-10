@@ -4,7 +4,7 @@ import types
 import click
 from click.decorators import pass_context
 
-from irodsqueue import VERSION, CHUNK_SIZE
+from irodsqueue import __version__ as VERSION, CHUNK_SIZE
 from irodsqueue.utils import make_ingest_queue
 
 

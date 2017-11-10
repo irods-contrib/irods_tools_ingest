@@ -1,9 +1,18 @@
 from setuptools import setup, find_packages
-from irodsqueue import VERSION
+
+
+# Get package version
+version = {}
+here = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(here, 'irodsqueue/version.py')) as f:
+    exec(f.read(), version)
+
 
 setup(
     name="irodsqueue",
-    version=VERSION,
+    version=version['__version__'],
+    author='Antoine de Torcy',
+    author_email='adetorcy@renci.org',
     license='BSD',
     install_requires=[
         'rq',
