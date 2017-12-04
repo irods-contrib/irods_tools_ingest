@@ -161,7 +161,7 @@ def chunks(f, chunksize=io.DEFAULT_BUFFER_SIZE):
 
 
 def send_chunks(session, file_path, obj_path, params, options):
-    with open(file_path, 'rb') as f, session.data_objects.open(obj_path, 'w', options) as o:
+    with open(file_path, 'rb') as f, session.data_objects.open(obj_path, 'w', **options) as o:
         for chunk in chunks(f, params.chunk_size):
             o.write(chunk)
 
@@ -170,7 +170,7 @@ def send_chunks_and_compute_checksum(session, file_path, obj_path, params, optio
 
     hasher = get_irods_hasher(params)
 
-    with open(file_path, 'rb') as f, session.data_objects.open(obj_path, 'w', options) as o:
+    with open(file_path, 'rb') as f, session.data_objects.open(obj_path, 'w', **options) as o:
         for chunk in chunks(f, params.chunk_size):
             o.write(chunk)
             hasher.update(chunk)
