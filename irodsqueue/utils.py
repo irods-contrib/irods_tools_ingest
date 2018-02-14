@@ -1,17 +1,15 @@
-import json
-import sys
-import re
-import io
-import os
-import hashlib
 import base64
-import logging
-import importlib
-from abc import ABCMeta, abstractmethod
-import time
 import datetime
+import hashlib
+import importlib
+import io
+import logging
+import os
+import re
+import sys
+import time
+from abc import ABCMeta, abstractmethod
 import irods.keywords as kw
-import irods.password_obfuscation as obf
 import irods.exception as ex
 import irodsqueue.config as config
 
@@ -137,7 +135,6 @@ def send_file(session, file_path, obj_path, params):
             # check if target is already there
             # avoid checksum if possible. size? ts? investigate sync mechanisms...
             # simple presence check for now
-            obj = session.data_objects.get(obj_path)
             logger.info("skipping {} (exists)".format(file_path))
             return
         except ex.DataObjectDoesNotExist:
