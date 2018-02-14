@@ -1,8 +1,6 @@
-import sys
 import os
-import types
 import click
-from click.decorators import pass_context
+import types
 
 from irodsqueue import __version__ as VERSION, CHUNK_SIZE
 from irodsqueue.utils import make_ingest_queue
